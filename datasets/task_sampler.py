@@ -207,7 +207,8 @@ class OmniglotSampler:
     def __init__(self, tasks, trainset, testset):
         self.tasks = tasks
         self.task_sampler = SampleOmni(trainset, testset)
-        self.task_sampler.add_complete_iteraetor(list(range(0, int(len(self.tasks)/2))))
+        self.task_sampler.add_complete_iteraetor(self.tasks)
+        # self.task_sampler.add_complete_iteraetor(list(range(0, int(len(self.tasks)/2))))
 
     def get_complete_iterator(self):
         return self.task_sampler.complete_iterator
@@ -279,7 +280,7 @@ class SampleOmni:
                                                      batch_size=15,
                                                      shuffle=True, num_workers=1)
         self.complete_iterator = train_iterator
-        logger.info("Len of complete iterator = %d", len(self.complete_iterator) * 256)
+        logger.info("Len of complete iterator = %d", len(self.complete_iterator) * 15)
 
         train_iterator2 = torch.utils.data.DataLoader(dataset,
                                                       batch_size=1,
