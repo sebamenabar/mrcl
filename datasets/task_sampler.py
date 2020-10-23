@@ -346,7 +346,7 @@ class SampleOmni:
             pin_memory=self.pin_memory,
         )
         self.complete_iterator = train_iterator
-        logger.info("Len of complete iterator = %d", len(self.complete_iterator) * 256)
+        logger.info("Len of complete iterator = %d", len(self.complete_iterator) * 15)
 
         train_iterator2 = torch.utils.data.DataLoader(
             dataset,

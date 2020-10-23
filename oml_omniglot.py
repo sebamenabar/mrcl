@@ -36,8 +36,8 @@ def main():
     # Using first 963 classes of the omniglot as the meta-training set
     args['classes'] = list(range(963))
 
-    args['traj_classes'] = list(range(int(963/2), 963))
-
+    # args['traj_classes'] = list(range(int(963/2), 963))
+    args['traj_classes'] = list(range(963))
 
 
     dataset = df.DatasetFactory.get_dataset(args['dataset'], background=True, train=True,path=args["path"], all=True)
