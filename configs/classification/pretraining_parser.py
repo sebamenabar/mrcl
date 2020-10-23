@@ -9,8 +9,9 @@ class Parser(configargparse.ArgParser):
         self.add('--rank', type=int, help='meta batch size, namely task num', default=0)
         self.add('--seed', nargs='+', help='Seed', default=[90], type=int)
         self.add('--path', help='Path of the dataset', default="../")
-        self.add('--epoch', type=int, nargs='+', help='epoch number', default=[45])
+        self.add('--epoch', type=int, nargs='+', help='epoch number', default=[300])
         self.add('--dataset', help='Name of experiment', default="omniglot")
-        self.add('--lr', nargs='+', type=float, help='task-level inner update learning rate', default=[0.0001])
+        self.add('--lr', nargs='+', type=float, help='task-level inner update learning rate', default=[5e-2])
         self.add('--name', help='Name of experiment', default="baseline")
-
+        self.add("--resize", type=int, default=None)
+        self.add("--augment", default=False, action="store_true")

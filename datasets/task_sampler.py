@@ -12,9 +12,25 @@ class SamplerFactory:
         pass
 
     @staticmethod
-    def get_sampler(dataset, tasks, trainset, testset=None, capacity=None):
+    def get_sampler(
+        dataset,
+        tasks,
+        trainset,
+        testset=None,
+        capacity=None,
+        prefetch_gpu=False,
+        use_cuda=False,
+        num_workers=0,
+    ):
         if "omni" in dataset:
-            return OmniglotSampler(tasks, trainset, testset)
+            return OmniglotSampler(
+                tasks,
+                trainset,
+                testset,
+                prefetch_gpu=prefetch_gpu,
+                use_cuda=use_cuda,
+                num_workers=num_workers,
+            )
         elif "Sin" == dataset:
             return SineSampler(tasks, capacity=capacity)
         elif "SinBaseline" in dataset:
@@ -25,7 +41,6 @@ class SamplerFactory:
 
 
 class SineSampler:
-
     def __init__(self, tasks, capacity):
         self.capacity = capacity
         self.tasks = tasks
@@ -51,7 +66,6 @@ class SineSampler:
 
 
 class SineBaselineSampler:
-
     def __init__(self, tasks, capacity):
         self.capacity = capacity
         self.tasks = tasks
@@ -77,7 +91,6 @@ class SineBaselineSampler:
 
 
 class SampleSineBaseline:
-
     def __init__(self, capacity):
         self.task_iterators = []
         self.iterators = {}
@@ -93,10 +106,20 @@ class SampleSineBaseline:
         decay = np.random.rand() * 0.4
         frequency = np.random.rand() * 2 + 1.0
 
-        self.iterators[task] = {'id': task, 'phase': phase, 'amplitude': amplitude, 'decay': decay,
-                                'frequency': frequency}
+        self.iterators[task] = {
+            "id": task,
+            "phase": phase,
+            "amplitude": amplitude,
+            "decay": decay,
+            "frequency": frequency,
+        }
 
-        logger.info("Task %d has been added to the list with phase %f and amp %f", task, phase, amplitude)
+        logger.info(
+            "Task %d has been added to the list with phase %f and amp %f",
+            task,
+            phase,
+            amplitude,
+        )
 
         return self.iterators[task]
 
@@ -117,7 +140,7 @@ class SampleSineBaseline:
         x[:, task_id % 10] = 1
 
         targets = np.zeros((len(x_samples), 2))
-        targets[:, 0] = task['amplitude'] * np.sin(x_samples + task['phase'])
+        targets[:, 0] = task["amplitude"] * np.sin(x_samples + task["phase"])
 
         targets[:, 1] = int(float(task_id) / 10)
 
@@ -130,8 +153,11 @@ class SampleSineBaseline:
         for t in range(0, len):
             x = float(t) / 20
 
-            y = task['amplitude'] * np.e ** (-x * task['decay']) * np.sin(
-                2 * np.pi * x / task['frequency'] + task['phase'])
+            y = (
+                task["amplitude"]
+                * np.e ** (-x * task["decay"])
+                * np.sin(2 * np.pi * x / task["frequency"] + task["phase"])
+            )
             xs.append(x)
             ys.append(y)
 
@@ -156,8 +182,13 @@ class SampleSine:
         decay = np.random.rand() * 0.4
         frequency = np.random.rand() * 2 + 1.0
 
-        self.iterators[task] = {'id': task, 'phase': phase, 'amplitude': amplitude, 'decay': decay,
-                                'frequency': frequency}
+        self.iterators[task] = {
+            "id": task,
+            "phase": phase,
+            "amplitude": amplitude,
+            "decay": decay,
+            "frequency": frequency,
+        }
 
         # logger.info("Task %d has been added to the list with phase %f and amp %f", task, phase, amplitude)
 
@@ -179,11 +210,11 @@ class SampleSine:
 
         x = np.zeros((samples, self.capacity))
         x[:, self.capacity - 1] = x_samples
-        assert (task_id <= self.capacity - 1)
+        assert task_id <= self.capacity - 1
         x[:, task_id] = 1
 
         targets = np.zeros((len(x_samples), 2))
-        targets[:, 0] = task['amplitude'] * np.sin(x_samples + task['phase'])
+        targets[:, 0] = task["amplitude"] * np.sin(x_samples + task["phase"])
         targets[:, 1] = 0
         return torch.tensor(x).float(), torch.tensor(targets).float()
 
@@ -194,8 +225,11 @@ class SampleSine:
         for t in range(0, len):
             x = float(t) / 20
 
-            y = task['amplitude'] * np.e ** (-x * task['decay']) * np.sin(
-                2 * np.pi * x / task['frequency'] + task['phase'])
+            y = (
+                task["amplitude"]
+                * np.e ** (-x * task["decay"])
+                * np.sin(2 * np.pi * x / task["frequency"] + task["phase"])
+            )
             xs.append(x)
             ys.append(y)
 
@@ -204,10 +238,24 @@ class SampleSine:
 
 class OmniglotSampler:
     # Class to sample tasks
-    def __init__(self, tasks, trainset, testset):
+    def __init__(
+        self,
+        tasks,
+        trainset,
+        testset,
+        prefetch_gpu=False,
+        use_cuda=False,
+        num_workers=0,
+    ):
         self.tasks = tasks
-        self.task_sampler = SampleOmni(trainset, testset)
-        self.task_sampler.add_complete_iteraetor(list(range(0, int(len(self.tasks)/2))))
+        # self.task_sampler = SampleOmni(trainset, testset, )
+        # self.task_sampler.add_complete_iteraetor(list(range(0, int(len(self.tasks)/2))))
+        self.task_sampler = SampleOmni(
+            trainset, testset, prefetch_gpu, use_cuda, num_workers
+        )
+        self.task_sampler.add_complete_iteraetor(self.tasks)
+        self.prefetch_gpu = prefetch_gpu
+        self.use_cuda = use_cuda
 
     def get_complete_iterator(self):
         return self.task_sampler.complete_iterator
@@ -227,9 +275,9 @@ class OmniglotSampler:
     def sample_tasks(self, t, train=False):
         # assert(false)
         dataset = self.task_sampler.get_task_trainset(t, train)
-        train_iterator = torch.utils.data.DataLoader(dataset,
-                                                     batch_size=1,
-                                                     shuffle=True, num_workers=1)
+        train_iterator = torch.utils.data.DataLoader(
+            dataset, batch_size=1, shuffle=True, num_workers=0,
+        )
         return train_iterator
 
 
@@ -258,41 +306,68 @@ class ImagenetSampler:
     def sample_tasks(self, t, train=False):
         # assert(false)
         dataset = self.task_sampler.get_task_trainset(t, train)
-        train_iterator = torch.utils.data.DataLoader(dataset,
-                                                     batch_size=1,
-                                                     shuffle=True, num_workers=1)
+        train_iterator = torch.utils.data.DataLoader(
+            dataset, batch_size=1, shuffle=True, num_workers=0,
+        )
         return train_iterator
 
-class SampleOmni:
 
-    def __init__(self, trainset, testset):
+class SampleOmni:
+    def __init__(
+        self, trainset, testset, prefetch_gpu=False, use_cuda=False, num_workers=0,
+    ):
         self.task_iterators = []
         self.trainset = trainset
         self.testset = testset
         self.iterators = {}
         self.test_iterators = {}
+        self.prefetch_gpu = prefetch_gpu
+        self.use_cuda = use_cuda
+        if self.prefetch_gpu:
+            self.num_workers = 0
+        else:
+            self.num_workers = num_workers
+
+    @property
+    def pin_memory(self):
+        if self.prefetch_gpu or not self.use_cuda:
+            return False
+        if self.use_cuda:
+            return True
 
     def add_complete_iteraetor(self, tasks):
         dataset = self.get_task_trainset(tasks, True)
         # dataset = self.get_task_testset(tasks)
-        train_iterator = torch.utils.data.DataLoader(dataset,
-                                                     batch_size=15,
-                                                     shuffle=True, num_workers=1)
+        train_iterator = torch.utils.data.DataLoader(
+            dataset,
+            batch_size=15,
+            shuffle=True,
+            num_workers=self.num_workers,
+            pin_memory=self.pin_memory,
+        )
         self.complete_iterator = train_iterator
         logger.info("Len of complete iterator = %d", len(self.complete_iterator) * 256)
 
-        train_iterator2 = torch.utils.data.DataLoader(dataset,
-                                                      batch_size=1,
-                                                      shuffle=True, num_workers=1)
+        train_iterator2 = torch.utils.data.DataLoader(
+            dataset,
+            batch_size=1,
+            shuffle=True,
+            num_workers=self.num_workers,
+            pin_memory=self.pin_memory,
+        )
 
         self.another_complete_iterator = train_iterator2
 
     def add_task_iterator(self, task, train):
         dataset = self.get_task_trainset([task], train)
 
-        train_iterator = torch.utils.data.DataLoader(dataset,
-                                                     batch_size=1,
-                                                     shuffle=True, num_workers=1)
+        train_iterator = torch.utils.data.DataLoader(
+            dataset,
+            batch_size=1,
+            shuffle=True,
+            num_workers=self.num_workers,
+            pin_memory=self.pin_memory,
+        )
         self.iterators[task] = train_iterator
         print("Task %d has been added to the list" % task)
         return train_iterator
@@ -324,7 +399,9 @@ class SampleOmni:
             indices = indices + (class_labels == a).astype(int)
         indices = np.nonzero(indices)
 
-        trainset._flat_character_images = [trainset._flat_character_images[i] for i in indices[0]]
+        trainset._flat_character_images = [
+            trainset._flat_character_images[i] for i in indices[0]
+        ]
         trainset.data = [trainset.data[i] for i in indices[0]]
         trainset.targets = [trainset.targets[i] for i in indices[0]]
 
@@ -340,7 +417,9 @@ class SampleOmni:
             indices = indices + (class_labels == a).astype(int)
         indices = np.nonzero(indices)
 
-        trainset._flat_character_images = [trainset._flat_character_images[i] for i in indices[0]]
+        trainset._flat_character_images = [
+            trainset._flat_character_images[i] for i in indices[0]
+        ]
         trainset.data = [trainset.data[i] for i in indices[0]]
         trainset.targets = [trainset.targets[i] for i in indices[0]]
 
@@ -349,13 +428,12 @@ class SampleOmni:
     def filter_upto(self, task):
 
         trainset = copy.deepcopy(self.trainset)
-        trainset.data = trainset.data[trainset.data['target'] <= task]
+        trainset.data = trainset.data[trainset.data["target"] <= task]
 
         return trainset
 
 
 class SampleImagenet:
-
     def __init__(self, trainset, testset):
         self.task_iterators = []
         self.trainset = trainset
@@ -366,24 +444,24 @@ class SampleImagenet:
     def add_complete_iteraetor(self, tasks):
         dataset = self.get_task_trainset(tasks, True)
         # dataset = self.get_task_testset(tasks)
-        train_iterator = torch.utils.data.DataLoader(dataset,
-                                                     batch_size=10,
-                                                     shuffle=True, num_workers=1)
+        train_iterator = torch.utils.data.DataLoader(
+            dataset, batch_size=10, shuffle=True, num_workers=1
+        )
         self.complete_iterator = train_iterator
         logger.info("Len of complete iterator = %d", len(self.complete_iterator) * 256)
 
-        train_iterator2 = torch.utils.data.DataLoader(dataset,
-                                                      batch_size=1,
-                                                      shuffle=True, num_workers=1)
+        train_iterator2 = torch.utils.data.DataLoader(
+            dataset, batch_size=1, shuffle=True, num_workers=1
+        )
 
         self.another_complete_iterator = train_iterator2
 
     def add_task_iterator(self, task, train):
         dataset = self.get_task_trainset([task], train)
 
-        train_iterator = torch.utils.data.DataLoader(dataset,
-                                                     batch_size=1,
-                                                     shuffle=True, num_workers=1)
+        train_iterator = torch.utils.data.DataLoader(
+            dataset, batch_size=1, shuffle=True, num_workers=1
+        )
         self.iterators[task] = train_iterator
         print("Task %d has been added to the list" % task)
         return train_iterator
@@ -438,7 +516,9 @@ class SampleImagenet:
             indices = indices + (class_labels == a).astype(int)
         indices = np.nonzero(indices)
 
-        trainset._flat_character_images = [trainset._flat_character_images[i] for i in indices[0]]
+        trainset._flat_character_images = [
+            trainset._flat_character_images[i] for i in indices[0]
+        ]
         trainset.data = [trainset.data[i] for i in indices[0]]
         trainset.targets = [trainset.targets[i] for i in indices[0]]
 
@@ -447,7 +527,6 @@ class SampleImagenet:
     def filter_upto(self, task):
 
         trainset = copy.deepcopy(self.trainset)
-        trainset.data = trainset.data[trainset.data['target'] <= task]
+        trainset.data = trainset.data[trainset.data["target"] <= task]
 
         return trainset
-

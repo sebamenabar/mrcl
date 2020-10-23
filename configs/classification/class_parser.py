@@ -16,8 +16,14 @@ class Parser(configargparse.ArgParser):
         self.add('--update_step', nargs='+', type=int, help='task-level inner update steps', default=[10])
         self.add('--dataset', help='Name of experiment', default="omniglot")
         self.add("--no-reset", action="store_true")
+        self.add("--reset", default="random", choices=["random", "zero"])
         self.add('--seed', nargs='+', help='Seed', default=[90], type=int)
         self.add('--name', help='Name of experiment', default="oml_regression")
         self.add('--path', help='Path of the dataset', default="../")
+        self.add('--prefetch_gpu', action="store_true", default=False)
+        self.add("--num_classes", default=963, type=int)
+        self.add("--num_workers", default=0, type=int)
+        self.add("--resize", type=int, default=None)
+        self.add("--augment", default=False, action="store_true")
 
 

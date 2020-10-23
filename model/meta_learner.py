@@ -184,6 +184,7 @@ class MetaLearingClassification(nn.Module):
         self.update_lr = args['update_lr']
         self.meta_lr = args['meta_lr']
         self.update_step = args['update_step']
+        self.reset = args["reset"]
 
         self.net = Learner.Learner(config)
         self.optimizer = optim.Adam(self.net.parameters(), lr=self.meta_lr)
@@ -191,7 +192,12 @@ class MetaLearingClassification(nn.Module):
     def reset_classifer(self, class_to_reset):
         bias = self.net.parameters()[-1]
         weight = self.net.parameters()[-2]
-        torch.nn.init.kaiming_normal_(weight[class_to_reset].unsqueeze(0))
+        if self.reset == "random":
+            torch.nn.init.kaiming_normal_(weight[class_to_reset].unsqueeze(0))
+        elif self.reset == "zero":
+            torch.nn.init.zeros_(weight[class_to_reset].unsqueeze(0))
+        else:
+            raise NameError(f"Unknwon reset {self.reset}")
 
     def reset_layer(self):
         bias = self.net.parameters()[-1]
@@ -303,6 +309,8 @@ class MetaLearingClassification(nn.Module):
         x_rand_temp = torch.cat(x_rand_temp).unsqueeze(0)
 
         x_traj, y_traj, x_rand, y_rand = torch.stack(x_traj), torch.stack(y_traj), x_rand_temp, y_rand_temp
+
+        # print(x_traj.size(), y_traj.size(), x_rand.size(), y_rand.size())
 
 
         return x_traj, y_traj, x_rand, y_rand

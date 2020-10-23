@@ -66,7 +66,7 @@ def main():
 
     utils.set_seed(args['seed'])
 
-    my_experiment = experiment(args['name'], args, "../results/", commit_changes=False, rank=0, seed=1)
+    my_experiment = experiment(args['name'], args, "./results/", commit_changes=False, rank=0, seed=1)
 
     data_train = df.DatasetFactory.get_dataset("omniglot", train=True, background=False, path=args['path'])
     data_test = df.DatasetFactory.get_dataset("omniglot", train=False, background=False, path=args['path'])
