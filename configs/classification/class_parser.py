@@ -24,6 +24,9 @@ class Parser(configargparse.ArgParser):
         self.add("--num_classes", default=963, type=int)
         self.add("--num_workers", default=0, type=int)
         self.add("--resize", type=int, default=None)
-        self.add("--augment", default=False, action="store_true")
+        self.add("--augment_spt", default=False, action="store_true")
+        self.add("--augment_qry", default=False, action="store_true")
+        self.add("--log_root", default="")
+        self.add("--all", default=False, action="store_true")
 
 

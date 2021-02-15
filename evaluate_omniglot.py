@@ -15,7 +15,7 @@ from experiment.experiment import experiment
 logger = logging.getLogger('experiment')
 
 
-def load_model(args, config):
+def load_model(args, config, zero=False):
     if args['model_path'] is not None:
         net_old = Learner.Learner(config)
         # logger.info("Loading model from path %s", args["model_path"])
@@ -27,7 +27,7 @@ def load_model(args, config):
             loaded_model.adaptation = old_model.adaptation
             loaded_model.meta = old_model.meta
 
-        net.reset_vars()
+        net.reset_vars(zero)
     else:
         net = Learner.Learner(config)
     return net

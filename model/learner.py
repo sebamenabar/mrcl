@@ -68,7 +68,7 @@ class Learner(nn.Module):
         logger.info("Inverse computed")
 
 
-    def reset_vars(self):
+    def reset_vars(self, zero=False):
         """
         Reset all adaptation parameters to random values. Bias terms are set to zero and other terms to default values of kaiming_normal_
         :return:
@@ -76,7 +76,10 @@ class Learner(nn.Module):
         for var in self.vars:
             if var.adaptation is True:
                 if len(var.shape) > 1:
-                    torch.nn.init.kaiming_normal_(var)
+                    if zero:
+                        torch.nn.init.zeros_(var)
+                    else:
+                        torch.nn.init.kaiming_normal_(var)
                 else:
                     torch.nn.init.zeros_(var)
 

@@ -153,7 +153,7 @@ class Omniglot(data.Dataset):
 
             print("Total classes = ", len(self.targets.unique()))
         else:
-            print("Total classes = ", np.max(self.targets))
+            print("Total classes = ", len(np.unique(self.targets)))
 
     def __len__(self):
         return len(self.data)
@@ -180,24 +180,26 @@ class Omniglot(data.Dataset):
 
             image = Image.open(image_path, mode="r").convert("L")
             self.images_cached[image_path] = image
-            if self.warmup_transform and (self.warmup_steps > 0):
-                image = self.warmup_transform(image)
-                self.warmup_steps -= 1
-                if self.warmup_steps == 0:
-                    print("\n\nFINISHED WARMUP\n")
-            elif self.transform:
-                image = self.transform(image)
+            # if self.warmup_transform and (self.warmup_steps > 0):
+            #     image = self.warmup_transform(image)
+            #     self.warmup_steps -= 1
+            #     if self.warmup_steps == 0:
+            #         print("\n\nFINISHED WARMUP\n")
+            # elif self.transform:
+            #     image = self.transform(image)
+            image = self.transform(image)
 
         else:
             image = self.images_cached[image_path]
-            if self.warmup_transform and (self.warmup_steps > 0):
-                image = self.warmup_transform(image)
-                self.warmup_steps -= 1
-                # print(self.warmup_steps)
-                if self.warmup_steps == 0:
-                    print("\n\nFINISHED WARMUP\n")
-            elif self.transform:
-                image = self.transform(image)
+            # if self.warmup_transform and (self.warmup_steps > 0):
+            #     image = self.warmup_transform(image)
+            #     self.warmup_steps -= 1
+            #     # print(self.warmup_steps)
+            #     if self.warmup_steps == 0:
+            #         print("\n\nFINISHED WARMUP\n")
+            # elif self.transform:
+            #     image = self.transform(image)
+            image = self.transform(image)
 
         # if self.transform:
         #     image = self.transform(image)

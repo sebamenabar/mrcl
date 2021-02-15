@@ -35,9 +35,9 @@ class ModelFactory():
 
         elif dataset == "omniglot":
             channels = 256
-            if resize is None:
+            if resize is None or (str(resize) == "84"):
                 strides = [2, 1, 2, 1, 2, 2]
-            else:
+            elif str(resize) == "28":
                 strides = [1, 1, 1, 2, 1, 2]
 
             return [

@@ -5,3 +5,5 @@ utils/__pycache__
 datasets/__pycache__
 model/__pycache__
 experiment/__pycache__
+*.pyc
+

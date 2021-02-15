@@ -337,13 +337,14 @@ class SampleOmni:
 
     def add_complete_iteraetor(self, tasks):
         dataset = self.get_task_trainset(tasks, True)
+        logger.info(str(len(dataset)))
         # dataset = self.get_task_testset(tasks)
         train_iterator = torch.utils.data.DataLoader(
             dataset,
             batch_size=15,
             shuffle=True,
-            num_workers=self.num_workers,
-            pin_memory=self.pin_memory,
+            num_workers=0,
+            # pin_memory=self.pin_memory,
         )
         self.complete_iterator = train_iterator
         logger.info("Len of complete iterator = %d", len(self.complete_iterator) * 15)
@@ -352,8 +353,8 @@ class SampleOmni:
             dataset,
             batch_size=1,
             shuffle=True,
-            num_workers=self.num_workers,
-            pin_memory=self.pin_memory,
+            num_workers=0,
+            # pin_memory=self.pin_memory,
         )
 
         self.another_complete_iterator = train_iterator2
@@ -365,8 +366,8 @@ class SampleOmni:
             dataset,
             batch_size=1,
             shuffle=True,
-            num_workers=self.num_workers,
-            pin_memory=self.pin_memory,
+            num_workers=0,
+            # pin_memory=self.pin_memory,
         )
         self.iterators[task] = train_iterator
         print("Task %d has been added to the list" % task)
@@ -389,23 +390,27 @@ class SampleOmni:
     def get_task_trainset(self, task, train):
 
         if train:
-            trainset = copy.deepcopy(self.trainset)
+            trainset = (self.trainset)
         else:
-            trainset = copy.deepcopy(self.testset)
+            trainset = (self.testset)
+        # if train:
+        #     trainset = copy.deepcopy(self.trainset)
+        # else:
+        #     trainset = copy.deepcopy(self.testset)
         class_labels = np.array([x[1] for x in trainset._flat_character_images])
 
         indices = np.zeros_like(class_labels)
         for a in task:
             indices = indices + (class_labels == a).astype(int)
-        indices = np.nonzero(indices)
+        indices = np.nonzero(indices)[0]
 
-        trainset._flat_character_images = [
-            trainset._flat_character_images[i] for i in indices[0]
-        ]
-        trainset.data = [trainset.data[i] for i in indices[0]]
-        trainset.targets = [trainset.targets[i] for i in indices[0]]
+        # trainset._flat_character_images = [
+        #     trainset._flat_character_images[i] for i in indices[0]
+        # ]
+        # trainset.data = [trainset.data[i] for i in indices[0]]
+        # trainset.targets = [trainset.targets[i] for i in indices[0]]
 
-        return trainset
+        return torch.utils.data.Subset(trainset, indices)
 
     def get_task_testset(self, task):
 

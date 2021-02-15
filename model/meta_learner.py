@@ -267,7 +267,7 @@ class MetaLearingClassification(nn.Module):
         # quit()
         return x_traj, y_traj, x_rand, y_rand
 
-    def sample_training_data_paper(self, iterators, it2, steps=2, reset=True):
+    def sample_training_data_paper(self, iterators_spt, iterators_qry, it2, steps=2, reset=True):
 
         # Sample data for inner and meta updates
 
@@ -280,7 +280,7 @@ class MetaLearingClassification(nn.Module):
         y_rand_temp = []
 
         class_counter = 0
-        for it1 in iterators:
+        for it1 in iterators_spt:
             # assert (len(iterators) == 1)
             steps_inner = 0
             rand_counter = 0
@@ -298,12 +298,24 @@ class MetaLearingClassification(nn.Module):
                     steps_inner += 1
 
                 else:
+                    break
+                    # x_rand_temp.append(img)
+                    # y_rand_temp.append(data)
+                    # rand_counter += 1
+                    # if rand_counter == steps:
+                    #     break
+            class_counter += 1
+
+        for it_spt, it_qry in zip(iterators_spt, iterators_qry):
+            steps_outer = 0
+            for img, data in it_qry:
+                if steps_outer < (len(it_spt) - steps):
                     x_rand_temp.append(img)
                     y_rand_temp.append(data)
-                    rand_counter += 1
-                    if rand_counter == steps:
-                        break
-            class_counter += 1
+                    steps_outer += 1
+                else:
+                    break
+
 
         y_rand_temp = torch.cat(y_rand_temp).unsqueeze(0)
         x_rand_temp = torch.cat(x_rand_temp).unsqueeze(0)
@@ -375,26 +387,27 @@ class MetaLearingClassification(nn.Module):
             accuracy_meta_set[0] = accuracy_meta_set[0] + classification_accuracy
 
             # Meta loss after a single inner update
-            meta_loss, last_layer_logits = self.meta_loss(x_rand[0], fast_weights, y_rand[0])
-            meta_losses[1] += meta_loss
+            # meta_loss, last_layer_logits = self.meta_loss(x_rand[0], fast_weights, y_rand[0])
+            # meta_losses[1] += meta_loss
 
-            classification_accuracy = self.eval_accuracy(last_layer_logits, y_rand[0])
-            accuracy_meta_set[1] = accuracy_meta_set[1] + classification_accuracy
+            # classification_accuracy = self.eval_accuracy(last_layer_logits, y_rand[0])
+            # accuracy_meta_set[1] = accuracy_meta_set[1] + classification_accuracy
 
         # print(len(x_traj))
         for k in range(1, len(x_traj)):
             # Doing inner updates using fast weights
             fast_weights = self.inner_update(x_traj[k], fast_weights, y_traj[k])
 
-            # Computing meta-loss with respect to latest weights
-            meta_loss, logits = self.meta_loss(x_rand[0], fast_weights, y_rand[0])
-            meta_losses[k + 1] += meta_loss
+            if k == (len(x_traj) - 1):
+                # Computing meta-loss with respect to latest weights
+                meta_loss, logits = self.meta_loss(x_rand[0], fast_weights, y_rand[0])
+                meta_losses[k + 1] += meta_loss
 
-            # Computing accuracy on the meta and traj set for understanding the learning
-            with torch.no_grad():
-                pred_q = F.softmax(logits, dim=1).argmax(dim=1)
-                classification_accuracy = torch.eq(pred_q, y_rand[0]).sum().item()  # convert to numpy
-                accuracy_meta_set[k + 1] = accuracy_meta_set[k + 1] + classification_accuracy
+                # Computing accuracy on the meta and traj set for understanding the learning
+                with torch.no_grad():
+                    pred_q = F.softmax(logits, dim=1).argmax(dim=1)
+                    classification_accuracy = torch.eq(pred_q, y_rand[0]).sum().item()  # convert to numpy
+                    accuracy_meta_set[k + 1] = accuracy_meta_set[k + 1] + classification_accuracy
 
         # Taking the meta gradient step
         self.optimizer.zero_grad()
